@@ -1,11 +1,9 @@
 import os
 import sys
 import subprocess
+import platform
 import whois
-import colorama
-from colorama import Fore, Style
-
-colorama.init()
+from shutil import get_terminal_size
 
 def clear_terminal():
     if os.name == 'nt':  
@@ -17,11 +15,11 @@ def check_domain_availability(domain_name):
     try:
         domain_info = whois.whois(domain_name)
         if domain_info.status == None:
-            return True  
+            return True, None  
         else:
-            return False  
+            return False, domain_info.registrar
     except whois.parser.PywhoisError:
-        return False  
+        return False, None  
 
 def display_header():
     header = """
@@ -31,31 +29,34 @@ def display_header():
      dBP  dBP  BB  dBP dBP dBP   dBP     
 dBBBBP'  dBBBBBBB dBP dBP dBP   dBP      
 """
-    print(Fore.RED + header + Style.RESET_ALL)
-    print(Fore.RED + "Made by @saintlf" + Style.RESET_ALL)
+    print(header)
+    print("Made by @saintlf")
 
 def main():
     clear_terminal()
     display_header()
 
-    if len(sys.argv) > 1 and sys.argv[1] == "--new-terminal":
-        while True:
-            domain_name = input("Enter a domain name to check its availability: ")
+    while True:
+        print("\nPlease enter a domain name:", end=' ')
+        width = get_terminal_size().columns - 22
+        domain_name = input()[:width]
 
-            if domain_name:
-                if check_domain_availability(domain_name):
-                    print(Fore.RED + f"The domain {domain_name} is available!" + Style.RESET_ALL)
-                else:
-                    print(Fore.RED + f"Sorry, the domain {domain_name} is already taken or invalid." + Style.RESET_ALL)
+        if domain_name:
+            available, owner = check_domain_availability(domain_name)
+            if available:
+                print(f"The domain {domain_name} is available! You can purchase it from domain registrars like GoDaddy, Namecheap, or Google Domains.")
             else:
-                print(Fore.RED + "Please enter a domain name." + Style.RESET_ALL)
+                print(f"Sorry, the domain {domain_name} is already taken. It is owned by {owner}.")
+        else:
+            print("Please enter a domain name.")
 
-            choice = input("Do you want to check another domain? (yes/no): ")
-            if choice.lower() != 'yes':
-                break
-    else:
-        subprocess.Popen([sys.executable, os.path.abspath(__file__), "--new-terminal"])
-        sys.exit()
+        print()
+        choice = input("Do you want to check another domain? (yes/no): ")
+        if choice.lower() != 'yes':
+            print("Restarting...")
+            python_executable = sys.executable
+            subprocess.Popen([python_executable, __file__, "--new-terminal"])
+            sys.exit()
 
 if __name__ == "__main__":
     main()
